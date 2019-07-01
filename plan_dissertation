@@ -1,0 +1,87 @@
+> data = [(label, im) for (label,im) in zip(labels,imageset)]
+[100,] dimension array of 2-tuples
+
+> imshow(data[0])
+
+"1"
+`---------`
+|   ...    |
+|     |    |
+|     |    |
+|   ----   |
+`---------`
+
+### DATA PREPARATION
+
+> transformed_data = [(label, apply_random_transformation(im)) \
+			for n in num_transformations for (label, im) in data]
+
+[num_transformations x 100,] dimension array of 2-tuples
+
+> imshow(transformed_data[0])
+
+"1"
+`---------`
+|   ----  |
+|     /   |
+|    /    |
+|   ...   |
+`---------`
+
+> print(transformed_data[0].shape)
+
+(299,299,3)
+
+### DIMENSION REDUCTION
+
+> inception = tfk.applications.InceptionV3(
+	include_top=False, pooling='avg' # various other options (check docs)
+)
+
+> input_data = asbatchtensor([im for (_, im) in transformed_data]) # not a real function
+
+[num_transformations x 100, 299, 299, 3] dimension tensor of 2-tuples
+
+> model = tfk.Model(input=inception.input, output=inception.output)
+
+> reduced_data = model.predict(input_data)
+
+[num_transformations x 100, 2000, 1] # this is the thing we care about
+
+> print(reduced_data[0,:,:])
+
+[2103 3453,46414233 464,4246 561 2423536]
+
+### TRAINING
+
+> classifier = scikit_learn.svm(training_data = reduced_data, labels=[label for (label, _) in transformed_data]) # example classifer, could be whatever you think is best
+
+> classifier.train()
+
+### TESTING
+
+> new_image = test_data[0]
+
+> imshow(new_image)
+
+`---------`
+|   -- -  |
+|    /    |
+|    /    |
+|   .     |
+`---------`
+
+> label(new_image) = "1" # we know this because it's our test data
+
+> new_reduced_data = model.predict(asbatchtensor(new_image)) # batch tensor is 1x299x299x3
+
+> classifer.predict(new_reduced_data)
+"1"
+
+> classifer.predict(new_reduced_data) == label(new_image)
+True
+
+
+
+
+
